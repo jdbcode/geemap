@@ -12,16 +12,6 @@ on:
         required: false
         type: string
         default: '1'
-      auto_changelog:
-        description: 'Auto-generate changelog from last stable release'
-        required: false
-        type: boolean
-        default: true
-      custom_notes:
-        description: 'Custom release notes (optional, used if auto_changelog is false)'
-        required: false
-        type: string
-        default: ''
       publish_immediately:
         description: 'Publish release immediately (otherwise created as draft)'
         required: false
@@ -94,8 +84,7 @@ jobs:
           git tag -a "${{ steps.compute.outputs.tag_name }}" -m "Release ${{ steps.compute.outputs.full_version }}"
           git push origin "${{ steps.compute.outputs.tag_name }}"
       
-      - name: Create GitHub Prerelease with auto-generated notes
-        if: ${{ github.event.inputs.auto_changelog == 'true' }}
+      - name: Create GitHub Prerelease
         env:
           GH_TOKEN: ${{ secrets.REPO_WRITE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
@@ -125,29 +114,6 @@ jobs:
               --generate-notes \
               --notes-start-tag "${LAST_RELEASE}"
           fi
-      
-      - name: Create GitHub Prerelease with custom notes
-        if: ${{ github.event.inputs.auto_changelog == 'false' }}
-        env:
-          GH_TOKEN: ${{ secrets.REPO_WRITE_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          NOTES="${{ github.event.inputs.custom_notes }}"
-          if [ -z "${NOTES}" ]; then
-            NOTES="Prerelease ${{ steps.compute.outputs.full_version }}"
-          fi
-          
-          # Determine if release should be draft or published immediately
-          if [ "${{ github.event.inputs.publish_immediately }}" == "true" ]; then
-            DRAFT_FLAG=""
-          else
-            DRAFT_FLAG="--draft"
-          fi
-          
-          gh release create "${{ steps.compute.outputs.tag_name }}" \
-            --title "${{ steps.compute.outputs.tag_name }}" \
-            --notes "${NOTES}" \
-            $DRAFT_FLAG \
-            --prerelease
       
       - name: Summary
         run: |
