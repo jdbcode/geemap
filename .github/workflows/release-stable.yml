@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       auto_changelog:
-        description: 'Auto-generate changelog from last primary release'
+        description: 'Auto-generate changelog from last stable release'
         required: false
         type: boolean
         default: true
