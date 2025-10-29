@@ -1,0 +1,84 @@
+name: Prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Prerelease version (e.g., 0.36.5rc1)'
+        required: true
+        type: string
+      publish_release:
+        description: 'Publish the release (if false, creates draft)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.REPO_WRITE_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: master
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Extract base version for branch name
+        id: branch
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # Extract base version (e.g., 0.36.5 from 0.36.5rc1)
+          BASE_VERSION=$(echo "${VERSION}" | sed -E 's/rc[0-9]+$//')
+          BRANCH_NAME="release/v${BASE_VERSION}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "Branch to create: ${BRANCH_NAME}"
+      
+      - name: Create release branch from master
+        run: |
+          git checkout -b ${{ steps.branch.outputs.branch_name }}
+          echo "Created branch ${{ steps.branch.outputs.branch_name }} from master"
+      
+      - name: Bump version
+        run: |
+          python scripts/bump_geemap_version.py ${{ github.event.inputs.version }}
+      
+      - name: Commit and push changes
+        run: |
+          git add pyproject.toml geemap/__init__.py
+          git commit -m "Bump version to ${{ github.event.inputs.version }}"
+          git push origin ${{ steps.branch.outputs.branch_name }}
+      
+      - name: Create and push tag
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          TAG="v${VERSION}"
+          git tag -a "${TAG}" -m "Prerelease ${VERSION}"
+          git push origin "${TAG}"
+      
+      - name: Create GitHub Prerelease
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_WRITE_TOKEN || secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: Prerelease ${{ github.event.inputs.version }}
+          body: |
+            Prerelease ${{ github.event.inputs.version }}
+            
+            This is a prerelease version for testing purposes.
+          draft: ${{ !github.event.inputs.publish_release }}
+          prerelease: true
