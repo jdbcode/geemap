@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: ''
+      publish_immediately:
+        description: 'Publish release immediately (otherwise created as draft)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   create-prerelease:
@@ -97,17 +102,26 @@ jobs:
           # Find the last non-prerelease tag
           LAST_RELEASE=$(gh release list --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')
           
+          # Determine if release should be draft or published immediately
+          if [ "${{ github.event.inputs.publish_immediately }}" == "true" ]; then
+            DRAFT_FLAG=""
+          else
+            DRAFT_FLAG="--draft"
+          fi
+          
           if [ -z "$LAST_RELEASE" ]; then
             echo "No previous release found, generating notes from all commits"
             gh release create "${{ steps.compute.outputs.tag_name }}" \
               --title "${{ steps.compute.outputs.tag_name }}" \
               --prerelease \
+              $DRAFT_FLAG \
               --generate-notes
           else
             echo "Generating changelog from ${LAST_RELEASE} to ${{ steps.compute.outputs.tag_name }}"
             gh release create "${{ steps.compute.outputs.tag_name }}" \
               --title "${{ steps.compute.outputs.tag_name }}" \
               --prerelease \
+              $DRAFT_FLAG \
               --generate-notes \
               --notes-start-tag "${LAST_RELEASE}"
           fi
@@ -122,9 +136,17 @@ jobs:
             NOTES="Prerelease ${{ steps.compute.outputs.full_version }}"
           fi
           
+          # Determine if release should be draft or published immediately
+          if [ "${{ github.event.inputs.publish_immediately }}" == "true" ]; then
+            DRAFT_FLAG=""
+          else
+            DRAFT_FLAG="--draft"
+          fi
+          
           gh release create "${{ steps.compute.outputs.tag_name }}" \
             --title "${{ steps.compute.outputs.tag_name }}" \
             --notes "${NOTES}" \
+            $DRAFT_FLAG \
             --prerelease
       
       - name: Summary
