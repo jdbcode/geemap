@@ -145,7 +145,7 @@ def main():
     new_version = sys.argv[1]
 
     # Validate version format (basic check)
-    if not re.match(r"^\d+\.\d+\.\d+(\.\w+)*$", new_version):
+    if not re.match(r"^\d+\.\d+\.\d+(rc\d+|\.post\d+)*$", new_version):
         print(f"ERROR: Invalid version format: {new_version}")
         print("Expected format: X.Y.Z, X.Y.ZrcN, or X.Y.Z.postN (e.g., 0.36.5.post0)")
         sys.exit(1)
