@@ -40,7 +40,6 @@ jobs:
           STABLE_VERSION="${{ github.event.release.tag_name }}"
 
           # 2. Strip the leading 'v' and append '.post0'
-          # Use parameter expansion to strip 'v'
           BASE_VERSION=${STABLE_VERSION/v/}
           NEW_DEV_VERSION="${BASE_VERSION}.post0"
 
@@ -75,6 +74,7 @@ jobs:
         id: commit_check
 
       - name: Create Pull Request to Master
+        # Only run if the commit_check step confirms changes were made.
         if: ${{ steps.commit_check.outputs.skip_pr == 'false' }}
         uses: peter-evans/create-pull-request@v6
         with:
