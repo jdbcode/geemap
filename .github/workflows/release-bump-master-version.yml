@@ -72,13 +72,7 @@ jobs:
             echo "skip_pr=false" >> $GITHUB_OUTPUT
           fi
         id: commit_check
-        
-      # ADDED: This is the essential fix to ensure the branch exists remotely before the PR action checks for it.
-      - name: Push New Branch to Remote
-        if: ${{ steps.commit_check.outputs.skip_pr == 'false' }}
-        run: |
-          git push origin ${{ steps.compute.outputs.new_branch_name }}
-          
+
       - name: Create Pull Request to Master
         # Only run if the commit_check step confirms changes were made.
         if: ${{ steps.commit_check.outputs.skip_pr == 'false' }}
@@ -89,6 +83,10 @@ jobs:
           branch: ${{ steps.compute.outputs.new_branch_name }}
           base: master
           title: "chore: Sync master version to ${{ steps.compute.outputs.new_dev_version }}"
+          # CRITICAL FIX: Stops the action from trying to sync with a non-existent remote branch.
+          do-not-fetch: true 
+          # Recommended for Bot actions
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           body: |
             This is an **automated Pull Request** triggered by the publication of the stable release **${{ github.event.release.tag_name }}**.
 
