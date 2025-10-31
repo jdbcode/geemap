@@ -1,4 +1,4 @@
-name: Post-Release Development Sync
+name: Release-bump-master-version
 
 on:
   # Triggered only when a release is PUBLISHED
