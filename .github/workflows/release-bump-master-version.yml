@@ -73,26 +73,31 @@ jobs:
           fi
         id: commit_check
 
-      - name: Create Pull Request to Master
+      - name: Create Pull Request to Master (using gh CLI)
         # Only run if the commit_check step confirms changes were made.
         if: ${{ steps.commit_check.outputs.skip_pr == 'false' }}
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.REPO_WRITE_TOKEN }}
-          commit-message: "chore: Set development version to ${{ steps.compute.outputs.new_dev_version }} [skip ci]"
-          branch: ${{ steps.compute.outputs.new_branch_name }}
-          base: master
-          title: "chore: Sync master version to ${{ steps.compute.outputs.new_dev_version }}"
-          # CRITICAL FIX: Stops the action from trying to sync with a non-existent remote branch.
-          do-not-fetch: true 
-          # Recommended for Bot actions
-          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          body: |
-            This is an **automated Pull Request** triggered by the publication of the stable release **${{ github.event.release.tag_name }}**.
+        env:
+          # Use the token for gh CLI authentication
+          GH_TOKEN: ${{ secrets.REPO_WRITE_TOKEN }}
+        run: |
+          BRANCH="${{ steps.compute.outputs.new_branch_name }}"
+          TITLE="chore: Sync master version to ${{ steps.compute.outputs.new_dev_version }}"
 
-            This PR updates the version numbers in `pyproject.toml` and `geemap/__init__.py` from the stable version to **`${{ steps.compute.outputs.new_dev_version }}`**. This is done to indicate that the master branch is now tracking the next development cycle.
+          # 1. Push the local branch to the remote (This solves the "unknown revision" error)
+          git push origin $BRANCH
 
-            **Please review and merge only after all downstream release checks (PyPI, Conda, Docs, etc.) are confirmed successful.**
-          labels: |
-            automated
-            maintenance
+          # 2. Define the multiline body content carefully
+          PR_BODY="This is an **automated Pull Request** triggered by the publication of the stable release **${{ github.event.release.tag_name }}**.
+
+          This PR updates the version numbers in \`pyproject.toml\` and \`geemap/__init__.py\` from the stable version to **\`${{ steps.compute.outputs.new_dev_version }}\`**. This is done to indicate that the master branch is now tracking the next development cycle.
+
+          **Please review and merge only after all downstream release checks (PyPI, Conda, Docs, etc.) are confirmed successful.**"
+
+          # 3. Create the PR using the gh CLI
+          gh pr create \
+            --base master \
+            --head $BRANCH \
+            --title "$TITLE" \
+            --body "$PR_BODY" \
+            --label "automated" \
+            --label "maintenance"
