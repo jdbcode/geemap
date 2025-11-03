@@ -1,4 +1,4 @@
-name: Release-bump-master-version1
+name: Release-bump-master-version
 
 on:
   # Triggered only when a release is PUBLISHED
