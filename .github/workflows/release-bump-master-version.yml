@@ -23,6 +23,11 @@ jobs:
           token: ${{ secrets.REPO_WRITE_TOKEN }}
           fetch-depth: 0
 
+      # FIX: Ensure the local master branch is updated to prevent non-fast-forward push errors.
+      - name: Ensure Master is Up-to-Date
+        run: |
+          git pull origin master
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -83,7 +88,7 @@ jobs:
           BRANCH="${{ steps.compute.outputs.new_branch_name }}"
           TITLE="chore: Sync master version to ${{ steps.compute.outputs.new_dev_version }}"
 
-          # 1. Push the local branch to the remote (This is essential and replaces the failed action's logic)
+          # 1. Push the local branch to the remote (Now guaranteed to work after the git pull)
           git push origin $BRANCH
 
           # 2. Define the multiline body content
