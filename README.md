@@ -16,6 +16,8 @@
 
 [![logo](https://i.imgur.com/9OOSpDm.png)](https://github.com/gee-community/geemap/blob/master/docs/assets/logo.png)
 
+# Manual change 0.36.8
+
 **A Python package for interactive geospatial analysis and visualization with Google Earth Engine**
 
 -   GitHub repo: <https://github.com/gee-community/geemap>
